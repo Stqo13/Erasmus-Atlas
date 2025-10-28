@@ -1,0 +1,51 @@
+{
+  "name": "erasmus-atlas",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "db"
+  ],
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev:api": "pnpm -C apps/api dev",
+    "dev:web": "pnpm -C apps/web dev",
+    "migrate:up": "pnpm -C db migrate:up",
+    "migrate:down": "pnpm -C db migrate:down",
+    "seed": "pnpm -C db seed"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Stqo13/Erasmus-Atlas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Stqo13/Erasmus-Atlas/issues"
+  },
+  "homepage": "https://github.com/Stqo13/Erasmus-Atlas#readme",
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "bcrypt": "^6.0.0",
+    "fastify": "^5.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "pnpm": "^10.19.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.9.1",
+    "dotenv-cli": "^10.0.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

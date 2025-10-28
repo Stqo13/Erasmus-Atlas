@@ -1,0 +1,17 @@
+{
+  "name": "db",
+  "private": true,
+  "scripts": {
+    "migrate:create": "node-pg-migrate create --migrations-dir ./migrations",
+    "migrate:up": "node-pg-migrate up --migrations-dir ./migrations",
+    "migrate:down": "node-pg-migrate down --migrations-dir ./migrations",
+    "seed": "node ./seeds/seed.js"
+  },
+  "devDependencies": {
+    "node-pg-migrate": "^7.6.0"
+  },
+  "dependencies": {
+    "pg": "^8.12.0"
+  }
+}
+
