@@ -1,11 +1,6 @@
-[README.md](https://github.com/user-attachments/files/23234528/README.md)
 # 🌍 Erasmus Atlas — Cultural Exchange & Analytics Platform
 
 **Erasmus Atlas** is an interactive web app that visualizes Erasmus+ student experiences across Europe — combining a real-time map, analytics dashboards, and AI-powered insights.
-
-<p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Erasmus%2B_Logo.svg/512px-Erasmus%2B_Logo.svg.png" width="220" alt="Erasmus+" />
-</p>
 
 ---
 
