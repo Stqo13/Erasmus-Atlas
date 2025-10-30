@@ -27,19 +27,35 @@ async function fetchAndRender() {
     }
     const { data } = await api.get('/posts', { params })
 
-    for (const m of markers) m.remove()
-    markers = []
+// clear old
+for (const m of markers) m.remove()
+markers = []
 
-    for (const p of (data.items || [])) {
-      if (p.lng == null || p.lat == null) continue
-      const el = document.createElement('div')
-      el.className = 'ea-marker'
-      el.title = p.title
-      const m = new maplibregl.Marker({ element: el })
-        .setLngLat([p.lng, p.lat])
-        .addTo(map)
-      m.getElement().addEventListener('click', () => { selected.value = p })
-      markers.push(m)
+for (const cluster of data.items || []) {
+  if (cluster.lng == null || cluster.lat == null) continue
+
+  const el = document.createElement('div')
+  el.className = 'ea-marker'
+
+  if (Array.isArray(cluster.posts) && cluster.posts.length > 1) {
+    el.innerText = String(cluster.posts.length)
+    el.style.color = 'white'
+    el.style.fontSize = '10px'
+    el.style.fontWeight = '600'
+    el.style.display = 'flex'
+    el.style.alignItems = 'center'
+    el.style.justifyContent = 'center'
+  }
+
+  const m = new maplibregl.Marker({ element: el })
+    .setLngLat([cluster.lng, cluster.lat])
+    .addTo(map)
+
+  m.getElement().addEventListener('click', () => {
+    selected.value = cluster
+  })
+
+  markers.push(m)
     }
   } catch (e: any) {
     error.value = e?.message || 'Failed to load posts'
@@ -83,14 +99,34 @@ onBeforeUnmount(() => {
       <p v-if="error" class="ea-err">{{ error }}</p>
       <p v-if="!loading && !error && !selected" class="ea-muted">Click a marker to view details.</p>
 
-      <div v-if="selected" class="ea-card">
-        <div class="ea-title">{{ selected.title }}</div>
-        <div class="ea-body">{{ selected.body }}</div>
-        <div v-if="selected.lng != null && selected.lat != null" class="ea-geo">
-          [{{ Number(selected.lng).toFixed(4) }}, {{ Number(selected.lat).toFixed(4) }}]
-        </div>
-        <button class="ea-btn" @click="selected = null" style="margin-top:8px">Close</button>
-      </div>
+      <div v-if="selected" class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+  <div class="text-sm uppercase tracking-wide text-slate-400">Posts at this location</div>
+
+  <div v-for="p in selected.posts" :key="p.id" class="bg-white rounded-lg border border-slate-100 p-2">
+    <h3 class="font-semibold text-slate-800 text-sm">{{ p.title }}</h3>
+    <p class="text-xs text-slate-500 mt-1">{{ p.body }}</p>
+    <p v-if="p.topics?.length" class="flex flex-wrap gap-1 mt-2">
+      <span
+        v-for="t in p.topics"
+        :key="t"
+        class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xxs text-[10px]"
+      >
+        {{ t }}
+      </span>
+    </p>
+  </div>
+
+  <p class="text-xs text-slate-400">
+    {{ selected.posts.length }} post(s) here.
+  </p>
+
+  <button
+    class="mt-2 inline-flex items-center rounded-lg bg-slate-900 text-white text-sm px-3 py-1.5 hover:bg-slate-700"
+    @click="selected = null"
+  >
+    Close
+  </button>
+</div>
     </aside>
   </div>
 </template>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import NavBar from './components/NavBar.vue'
+import ToastHost from './components/ToastHost.vue'
 </script>
 
 <template>
   <NavBar />
   <router-view />
+  <ToastHost />
 </template>
 
 <style>
