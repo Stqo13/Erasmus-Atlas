@@ -15,4 +15,7 @@ input, textarea { padding:8px; border:1px solid #e5e7eb; border-radius:8px; widt
 label { font-weight:600; display:block; margin-top:12px; margin-bottom:6px; }
 .container { max-width: 920px; margin: 16px auto; padding: 0 16px; }
 .card { background:white; border:1px solid #e5e7eb; border-radius:10px; padding:12px; }
+.container { max-width: 960px; margin: 16px auto; padding: 0 16px; }
+.card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+h1 { font-size: 22px; font-weight: 700; margin: 12px 0; color:#0f172a; }
 </style>

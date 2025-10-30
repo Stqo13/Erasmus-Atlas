@@ -9,51 +9,57 @@ const router = useRouter()
 
 const title = ref('')
 const body = ref('')
-const lat = ref<number | null>(40.4168)   // Madrid default
-const lng = ref<number | null>(-3.7038)
+const lat = ref<number | null>(null)
+const lng = ref<number | null>(null)
 const message = ref('')
 
 async function submit() {
   message.value = ''
+  if (!auth.token) return (message.value = 'Please login first.')
+
   try {
-    if (!auth.token) { message.value = 'Please login first.'; return }
-    const payload: any = { title: title.value, body: body.value }
-    if (lat.value != null && lng.value != null) {
-      payload.lat = lat.value; payload.lng = lng.value
-    }
-    const { data } = await api.post('/posts', payload)
-    message.value = `Post created: ${data.id}`
-    title.value = ''; body.value = ''
-    router.push('/posts')
+    const { data } = await api.post('/posts', {
+      title: title.value,
+      body: body.value,
+      lat: lat.value,
+      lng: lng.value,
+    })
+    message.value = `✅ Post created: ${data.id}`
+    router.push('/map')
   } catch (e: any) {
-    message.value = e?.response?.data?.error || 'Failed to create post'
-    console.error(e)
+    message.value = `❌ ${e?.response?.data?.error || 'Failed to create post'}`
   }
 }
 </script>
 
 <template>
-  <div class="container">
-    <h1>Submit Post</h1>
-    <div class="card" style="max-width:640px">
-      <label>Title</label>
-      <input v-model="title" placeholder="Your title" />
-      <label>Body</label>
-      <textarea v-model="body" rows="4" placeholder="Share your tip/story"></textarea>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px">
+  <main class="max-w-3xl mx-auto px-6 py-6">
+    <h1 class="text-2xl font-bold mb-4">Create a Post</h1>
+
+    <form class="card grid gap-4" @submit.prevent="submit">
+      <div>
+        <label class="font-medium">Title</label>
+        <input v-model="title" class="input" placeholder="Title" />
+      </div>
+
+      <div>
+        <label class="font-medium">Body</label>
+        <textarea v-model="body" class="input" rows="4" placeholder="Share your story"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
         <div>
-          <label>Latitude</label>
-          <input v-model.number="lat" type="number" step="0.0001" />
+          <label class="font-medium">Latitude</label>
+          <input v-model.number="lat" type="number" class="input" />
         </div>
         <div>
-          <label>Longitude</label>
-          <input v-model.number="lng" type="number" step="0.0001" />
+          <label class="font-medium">Longitude</label>
+          <input v-model.number="lng" type="number" class="input" />
         </div>
       </div>
-      <div style="margin-top:12px">
-        <button @click="submit">Create</button>
-        <span v-if="message" style="margin-left:8px">{{ message }}</span>
-      </div>
-    </div>
-  </div>
+
+      <button type="submit" class="btn btn-primary w-full">Submit</button>
+      <p class="text-sm text-gray-600">{{ message }}</p>
+    </form>
+  </main>
 </template>
