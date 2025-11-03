@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../stores/auth'
 import { useRouter } from 'vue-router'
 import { useToast } from '../stores/toast'
+import { TOPICS } from '../lib/topics'
 
 const auth = useAuth()
 const router = useRouter()
@@ -15,6 +16,8 @@ const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const cities = ref<any[]>([])
 const selectedCityId = ref<string>('')
+
+const selectedTopics = ref<string[]>([])
 
 onMounted(async () => {
   const { data } = await api.get('/cities')
@@ -31,13 +34,14 @@ async function submit() {
   const payload: any = {
     title: title.value,
     body: body.value,
+    topics: selectedTopics.value, 
   }
 
   if (selectedCityId.value) {
     payload.cityId = selectedCityId.value
   } else if (lat.value != null && lng.value != null) {
-    payload.lat = lat.value
-    payload.lng = lng.value
+    payload.lat = Number(lat.value)
+    payload.lng = Number(lng.value)
   }
 
   try {
@@ -63,6 +67,21 @@ async function submit() {
       <div>
         <label class="font-medium">Body</label>
         <textarea v-model="body" class="input" rows="4" required></textarea>
+      </div>
+
+      <div>
+        <label class="font-medium">Topics</label>
+        <div class="flex flex-wrap gap-2 mt-2">
+          <label
+            v-for="t in TOPICS"
+            :key="t"
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer text-sm"
+            :class="selectedTopics.includes(t) ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-300 text-slate-700'"
+          >
+            <input type="checkbox" class="accent-blue-600" :value="t" v-model="selectedTopics" />
+            {{ t }}
+          </label>
+        </div>
       </div>
 
       <div>

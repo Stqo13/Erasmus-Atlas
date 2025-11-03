@@ -8,6 +8,7 @@
     "seed": "dotenv -e .env.local -- node ./seeds/seed.cjs"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
     "dotenv-cli": "^11.0.0",
     "node-pg-migrate": "^7.6.0"
   },
