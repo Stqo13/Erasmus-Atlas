@@ -2,31 +2,42 @@
 import { ref } from 'vue'
 import { useAuth } from '../stores/auth'
 import { useRouter } from 'vue-router'
-const name = ref('Demo User')
-const email = ref('demo2@example.com')
-const password = ref('secret123')
+
+const name = ref('')
+const email = ref('')
+const password = ref('')
 const auth = useAuth()
 const router = useRouter()
-async function submit(){
+const localError = ref('')
+
+async function submit() {
+  localError.value = ''
   const ok = await auth.register(name.value, email.value, password.value)
-  if (ok) router.push('/posts')
+  if (ok) router.push('/map')
+  else localError.value = auth.error || 'Registration failed'
 }
 </script>
 
 <template>
-  <div class="container">
-    <h1>Register</h1>
-    <div class="card" style="max-width:480px">
-      <label>Name</label>
-      <input v-model="name" />
-      <label>Email</label>
-      <input v-model="email" type="email" />
-      <label>Password</label>
-      <input v-model="password" type="password" />
-      <div style="margin-top:12px; display:flex; gap:8px">
-        <button @click="submit" :disabled="auth.loading">Create account</button>
-        <span v-if="auth.error" style="color:#b91c1c">{{ auth.error }}</span>
+  <div class="max-w-md mx-auto space-y-4">
+    <h1 class="text-2xl font-bold text-ink">Create account</h1>
+    <form class="card space-y-3" @submit.prevent="submit">
+      <div>
+        <label class="text-sm">Name</label>
+        <input v-model="name" class="input" required />
       </div>
-    </div>
+      <div>
+        <label class="text-sm">Email</label>
+        <input v-model="email" type="email" class="input" required />
+      </div>
+      <div>
+        <label class="text-sm">Password</label>
+        <input v-model="password" type="password" class="input" required />
+      </div>
+      <button class="btn btn-primary w-full" :disabled="auth.loading">
+        {{ auth.loading ? 'Creating…' : 'Create account' }}
+      </button>
+      <p v-if="localError" class="text-danger text-sm">{{ localError }}</p>
+    </form>
   </div>
 </template>

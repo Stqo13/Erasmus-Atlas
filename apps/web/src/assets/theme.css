@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #app { height: 100%; }
+
+  /* Soft warm app background instead of pure white */
+  body {
+    @apply bg-surface-50 text-ink font-body antialiased;
+    /* use hexes, not theme() function */
+    background-image:
+      radial-gradient(60rem 30rem at 10% -10%, #EAF3FE, transparent),
+      radial-gradient(50rem 25rem at 100% 10%, rgba(217,179,196,0.16), transparent);
+    background-attachment: fixed;
+  }
+
+  h1,h2,h3 { @apply font-display text-ink; }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl2 px-4 py-2 text-sm font-medium transition-all shadow-soft;
+  }
+  .btn-primary { @apply bg-plum text-white hover:brightness-110 active:brightness-95; }
+  .btn-outline { @apply border border-ink/15 text-ink hover:bg-surface-100; }
+  .btn-ghost   { @apply bg-transparent text-ink/80 hover:bg-surface-100; }
+
+  .input {
+    @apply w-full rounded-xl2 border border-ink/15 bg-white/90 px-3 py-2 text-sm text-ink placeholder:text-ink/40 shadow-soft focus:outline-none focus:ring-2 focus:ring-plum;
+  }
+
+  .card {
+    @apply rounded-xl2 bg-surface-100 shadow-card border border-ink/10 p-4;
+  }
+
+  .chip { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs; }
+}
+
+/* Map marker */
+.ea-marker {
+  width: 16px; height: 16px; border-radius: 9999px;
+  box-shadow: 0 6px 14px rgba(59,59,88,0.22);
+  border: 2px solid #fff;
+}
