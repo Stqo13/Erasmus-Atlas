@@ -10,7 +10,7 @@ if (!DATABASE_URL) {
 
 const TOPICS = ['Food', 'Nightlife', 'Housing', 'Academics', 'Safety', 'Costs', 'Travel'];
 const TOTAL = 1500;
-const PCT_NO_GEOM = 0.08;  // some posts without geom on purpose
+const PCT_NO_GEOM = 0.0;  // some posts without geom on purpose
 const BATCH = 200;
 
 function pickTopics() {
@@ -21,9 +21,12 @@ function pickTopics() {
 }
 
 function jitter(lat, lng) {
-  const dLat = faker.number.float({ min: -0.0025, max: 0.0025 });
-  const dLng = faker.number.float({ min: -0.0025, max: 0.0025 });
-  return { lat: lat + dLat, lng: lng + dLng };
+    // ~1km ≈ 1/111 degree latitude; scale long by cos φ
+  const km = faker.number.float({ min: -0.25, max: 0.25 }) // ~±250m
+  const km2 = faker.number.float({ min: -0.25, max: 0.25 })
+  const dLat = km / 111
+  const dLng = (km2 / 111) / Math.cos((lat * Math.PI) / 180)
+  return { lat: lat + dLat, lng: lng + dLng }
 }
 
 (async () => {
