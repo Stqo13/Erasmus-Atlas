@@ -22,17 +22,20 @@
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl2 px-4 py-2 text-sm font-medium transition-all shadow-soft;
   }
-  .btn-primary { @apply bg-plum text-white hover:brightness-110 active:brightness-95; }
+  .btn-primary { @apply bg-accent-plum text-white hover:brightness-110 active:brightness-95; }
   .btn-outline { @apply border border-ink/15 text-ink hover:bg-surface-100; }
   .btn-ghost   { @apply bg-transparent text-ink/80 hover:bg-surface-100; }
+  .btn { @apply transition-all duration-200 ease-smooth; }
 
   .input {
-    @apply w-full rounded-xl2 border border-ink/15 bg-white/90 px-3 py-2 text-sm text-ink placeholder:text-ink/40 shadow-soft focus:outline-none focus:ring-2 focus:ring-plum;
+    @apply w-full rounded-xl2 border border-ink/15 bg-white/90 px-3 py-2 text-sm text-ink placeholder:text-ink/40 shadow-soft focus:outline-none focus:ring-accent-plum focus:ring-2;
   }
 
   .card {
     @apply rounded-xl2 bg-surface-100 shadow-card border border-ink/10 p-4;
   }
+
+  .card:hover { transform: translateY(-2px); }
 
   .chip { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs; }
 }

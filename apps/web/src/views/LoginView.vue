@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuth } from '../stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const email = ref('demo@demo.com')
 const password = ref('secret123')
 const auth = useAuth()
 const router = useRouter()
-const localError = ref('')
+const route = useRoute()
+
+const note = ref('')
+const err = ref('')
 
 async function submit() {
-  localError.value = ''
+  err.value = ''; note.value = ''
   const ok = await auth.login(email.value, password.value)
-  if (ok) router.push('/map')
-  else localError.value = auth.error || 'Login failed'
+  if (ok) {
+    note.value = 'Welcome back!'
+    const next = (route.query.next as string) || '/map'
+    router.push(next)
+  } else {
+    err.value = auth.error || 'Login failed'
+  }
 }
 </script>
 
@@ -32,7 +40,8 @@ async function submit() {
       <button class="btn btn-primary w-full" :disabled="auth.loading">
         {{ auth.loading ? 'Signing in…' : 'Sign in' }}
       </button>
-      <p v-if="localError" class="text-danger text-sm">{{ localError }}</p>
+      <p v-if="note" class="text-green-600 text-sm">{{ note }}</p>
+      <p v-if="err" class="text-danger text-sm">{{ err }}</p>
       <p class="text-xs text-ink/60">
         No account? <router-link to="/register" class="text-plum underline">Create one</router-link>.
       </p>

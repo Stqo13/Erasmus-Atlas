@@ -5,6 +5,7 @@ import authRoutes from './routes/auth';
 import postsRoutes from './routes/posts';
 import health from './routes/health';
 import citiesRoutes from './routes/cities';
+import analyticsRoutes from './routes/analytics'
 
 async function main() {
   const app = Fastify({ logger: true });
@@ -14,6 +15,7 @@ async function main() {
   await app.register(postsRoutes);
   await app.register(health);
   await app.register(citiesRoutes);
+  await app.register(analyticsRoutes, { prefix: '/analytics' })
 
   const port = +(process.env.PORT || 8080);
   app.listen({ port }, (err, address) => {

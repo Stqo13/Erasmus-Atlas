@@ -6,7 +6,8 @@ import LoginView from './views/LoginView.vue'
 import RegisterView from './views/RegisterView.vue'
 import SubmitView from './views/SubmitView.vue'
 import MapView from './views/MapView.vue'
-import { useAuth } from './stores/auth'   // 👈 add this
+import DashboardView from './views/DashboardView.vue'
+import { useAuth } from './stores/auth'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -17,8 +18,8 @@ export const router = createRouter({
     { path: '/login', component: LoginView, meta: { guestOnly: true } },
     { path: '/register', component: RegisterView, meta: { guestOnly: true } },
     { path: '/submit', component: SubmitView, meta: { requiresAuth: true } },
-
-    { path: '/:pathMatch(.*)*', component: HomeView }, // or a NotFound view
+    { path: '/dashboard', component: DashboardView },
+    { path: '/:pathMatch(.*)*', component: HomeView },
   ],
   scrollBehavior() {
     return { top: 0 }

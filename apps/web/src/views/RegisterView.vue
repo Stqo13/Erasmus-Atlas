@@ -8,13 +8,18 @@ const email = ref('')
 const password = ref('')
 const auth = useAuth()
 const router = useRouter()
-const localError = ref('')
+const note = ref('')
+const err = ref('')
 
 async function submit() {
-  localError.value = ''
+  err.value = ''; note.value = ''
   const ok = await auth.register(name.value, email.value, password.value)
-  if (ok) router.push('/map')
-  else localError.value = auth.error || 'Registration failed'
+  if (ok) {
+    note.value = 'Account created! Redirecting…'
+    router.push('/map')
+  } else {
+    err.value = auth.error || 'Registration failed'
+  }
 }
 </script>
 
@@ -37,7 +42,8 @@ async function submit() {
       <button class="btn btn-primary w-full" :disabled="auth.loading">
         {{ auth.loading ? 'Creating…' : 'Create account' }}
       </button>
-      <p v-if="localError" class="text-danger text-sm">{{ localError }}</p>
+      <p v-if="note" class="text-green-600 text-sm">{{ note }}</p>
+      <p v-if="err" class="text-danger text-sm">{{ err }}</p>
     </form>
   </div>
 </template>
