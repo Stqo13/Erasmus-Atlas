@@ -17,7 +17,7 @@ async function submit() {
   const ok = await auth.login(email.value, password.value)
   if (ok) {
     note.value = 'Welcome back!'
-    const next = (route.query.next as string) || '/map'
+    const next = (route.query.next as string) || '/home'
     router.push(next)
   } else {
     err.value = auth.error || 'Login failed'
