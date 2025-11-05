@@ -1,63 +1,71 @@
-# 🌍 Erasmus Atlas — Cultural Exchange & Analytics Platform
+# 🌍 Erasmus Atlas — Interactive Erasmus+ Experience Map
 
-**Erasmus Atlas** is an interactive web app that visualizes Erasmus+ student experiences across Europe — combining a real-time map, analytics dashboards, and AI-powered insights.
+**Erasmus Atlas** is a modern web platform that visualizes **Erasmus+ student life across Europe** — blending personal posts, interactive maps, and country analytics.  
+It’s designed to showcase real student experiences and provide insights into living, studying, and traveling abroad.
 
 ---
 
-## ✨ Core Features
+## ✨ Features Overview
 
 ### 🗺️ Interactive Map  
-- Explore student posts on a dynamic **MapLibre GL** map.  
-- Click markers to read tips and stories.  
-- Bounding box queries keep performance fast.  
+- Explore posts from Erasmus students across **Europe’s real cities**.  
+- Markers cluster automatically and display multiple posts per city.  
+- Each post includes a topic (Food, Housing, Nightlife, etc.) with color-coded markers.  
+- Posts are stored with **PostGIS geometry** for real spatial queries.
 
-### 🧭 Post System  
-- Authenticated users can **submit posts** with geolocation, title, and story.  
-- Posts instantly appear on the map (with moderation support planned).  
+### 🧭 Community Posts  
+- Users can **register, log in, and share posts** with a title, body, and location.  
+- Choose a city or coordinates directly from the map.  
+- Posts appear instantly after submission.  
 
-### 📊 Analytics (Coming Soon)  
-- Compare Erasmus satisfaction, costs, nightlife, and academics by city/country.  
-- AI-generated “insights” highlight trends and differences.  
+### 📊 Analytics Dashboard  
+- Built-in dashboard summarizing key metrics like:  
+  *Most active countries*, *Popular topics*, *Post growth trends*, and *sentiment overview*.  
+- ECharts-powered visualizations that update live from the database.  
 
-### 🤖 AI (Future Phase)  
-- Sentiment analysis and topic auto-tagging.  
-- Natural-language summaries like  
-  _“Spain’s nightlife satisfaction rose +8 pts this quarter, ranking top-2 in the EU.”_
+### 🎨 Modern UI/UX  
+- Full Tailwind design using the custom **plum–rose–sand** palette  
+  (`#3B3B58`, `#A7C6ED`, `#D9B3C4`, `#6F2C91`, `#F2E1D4`).  
+- Responsive layout for desktop & mobile.  
+- Smooth transitions, clean typography, and a structured layout inspired by modern learning dashboards.  
+
+### 🧠 Smart Insights *(in progress)*  
+- Mock AI-generated summaries:  
+  _“Spain’s nightlife posts increased 23% this semester.”_  
+- Planned sentiment and keyword analysis per country.
 
 ---
 
 ## 🏗️ Tech Stack
 
-| Layer | Technology | Notes |
-|-------|-------------|-------|
-| **Frontend** | Vue 3, Vite, TypeScript, Pinia, Vue Router, Tailwind CSS | Fast SPA with reactive data and clean UI |
-| **Map** | MapLibre GL JS | Open-source, high-performance maps |
-| **Backend** | Fastify, TypeScript, Zod, JWT | REST API with validation and authentication |
-| **Database** | PostgreSQL + PostGIS | Geospatial queries and geometry storage |
-| **ORM / Queries** | Native SQL with node-pg | Lightweight and fast |
-| **Workers** | BullMQ *(optional)* | Background AI / image / moderation tasks |
-| **Cache** | Redis *(optional)* | Query caching, job queues |
-| **Storage** | MinIO / S3 compatible | For image uploads |
-| **Dev Tools** | pnpm, Vite, Nodemon, ESLint | Developer experience |
+| Layer | Technology | Purpose |
+|-------|-------------|----------|
+| **Frontend** | Vue 3 + Vite + TypeScript + Pinia + Tailwind CSS | Reactive SPA and UI |
+| **Map** | MapLibre GL JS | Open-source interactive maps |
+| **Backend** | Fastify + TypeScript + Zod | REST API with JWT auth and validation |
+| **Database** | PostgreSQL + PostGIS | Geospatial storage & queries |
+| **ORM** | node-pg | Lightweight, raw SQL control |
+| **Visualization** | Apache ECharts | Dynamic, animated analytics |
+| **Dev tools** | pnpm, Nodemon, ESLint | Fast, reproducible development |
 
 ---
 
-## 🧩 Monorepo Structure
+## 🧩 Monorepo Layout
 
 ```
 erasmus-atlas/
 │
 ├── apps/
-│   ├── api/           # Fastify REST API (Node.js + TypeScript)
-│   ├── web/           # Vue 3 frontend with Vite + Tailwind
-│   └── workers/       # BullMQ jobs (AI tagging, moderation, etc.)
+│   ├── api/           # Fastify REST API (Node + TypeScript)
+│   ├── web/           # Vue 3 frontend (Vite + Tailwind)
+│   └── workers/       # Optional background jobs (AI, moderation)
 │
 ├── db/
-│   ├── migrations/    # node-pg-migrate scripts
-│   ├── seeds/         # Initial data seeds
-│   └── schema.sql     # Optional schema reference
+│   ├── migrations/    # node-pg-migrate files
+│   ├── seeds/         # Hard-coded cities & posts
+│   └── reset.cjs      # Database reset utility
 │
-├── uploads/           # User images / media
+├── uploads/           # Future image uploads
 └── docs/              # Documentation & architecture notes
 ```
 
@@ -65,21 +73,21 @@ erasmus-atlas/
 
 ## ⚙️ Local Setup
 
-### Prerequisites
+### 🔧 Requirements
 - Node.js ≥ 18  
 - pnpm ≥ 8 (`npm i -g pnpm`)  
-- PostgreSQL (with PostGIS enabled)  
-- PgAdmin 4 (optional)
+- PostgreSQL (with **PostGIS** extension)  
+- PgAdmin 4 *(optional)*  
 
-### 1️⃣ Clone & install
+### 1️⃣ Clone & install dependencies
 ```bash
 git clone https://github.com/<your-username>/Erasmus-Atlas.git
 cd Erasmus-Atlas
 pnpm install
 ```
 
-### 2️⃣ Configure environment
-Create `.env.local` files inside each app as needed:
+### 2️⃣ Environment configuration
+Create `.env.local` in `/db` and `/apps/api`:
 
 **db/.env.local**
 ```bash
@@ -93,77 +101,78 @@ JWT_SECRET=supersecret
 PORT=8080
 ```
 
-### 3️⃣ Create DB & run migrations
+### 3️⃣ Database setup
 ```bash
 pnpm -C db migrate:up
-pnpm dotenv -e db/.env.local -- node db/seeds/seed.cjs
+pnpm dotenv -e db/.env.local -- node db/seeds/seed_hard_cities.cjs
+pnpm dotenv -e db/.env.local -- node db/seeds/seed_hard_posts.cjs
 ```
 
-### 4️⃣ Run backend
+### 4️⃣ Start the backend
 ```bash
 pnpm -C apps/api dev
+# → API at http://127.0.0.1:8080
 ```
-> The API will start at: **http://127.0.0.1:8080**
 
-### 5️⃣ Run frontend
+### 5️⃣ Start the frontend
 ```bash
 pnpm -C apps/web dev
+# → Web app at http://localhost:5173
 ```
-> Web app available at: **http://localhost:5173**
 
 ---
 
-## 🚀 Current Features Implemented
-✅ JWT-based auth (register/login)  
-✅ Create, list, and view posts  
-✅ Display posts on map  
-✅ Tailwind-styled UI  
-✅ Data seeding + PostGIS integration  
+## 🚀 Implemented So Far
+
+✅ JWT Auth (login/register/logout)  
+✅ Interactive map with clustered posts  
+✅ City & country seeds with real coordinates  
+✅ Analytics dashboard with ECharts  
+✅ Custom Tailwind theme  
+✅ Reset + reseed workflow  
 
 ---
 
-## 🧠 Roadmap
+## 🧭 Roadmap 2025
 
-| Stage | Feature | Status |
+| Phase | Feature | Status |
 |--------|----------|--------|
-| **1. Core Platform** | Auth, posts, map | ✅ Done |
-| **2. Polish** | Tailwind UI, toasts, nav | 🟢 In progress |
-| **3. Analytics** | Country/city dashboards | ⏳ Planned |
-| **4. AI Features** | Sentiment, auto-tagging | ⏳ Planned |
-| **5. Admin Tools** | Moderation, CSV import | ⏳ Planned |
+| **1. Core Map + Auth** | Users, posts, clustering | ✅ Complete |
+| **2. Data Expansion** | Hard-coded EU cities & posts | ✅ Complete |
+| **3. Analytics Dashboard** | Charts & country stats | 🟢 Active |
+| **4. Design Polish** | Responsive theme + transitions | 🟢 In progress |
+| **5. AI Insights** | Sentiment & summaries | ⏳ Planned |
+| **6. Admin Tools** | Post moderation, import/export | ⏳ Planned |
 
 ---
 
-## 🧑‍💻 Development Notes
+## 💡 Development Notes
 
-- Run all commands via `pnpm -C <app>` to stay scoped.  
-- Backend uses **node-pg** with raw SQL for full control.  
-- Frontend uses **Pinia** for global state and **Axios** for API calls.  
-- PostGIS adds the `geometry(Point, 4326)` column for map coordinates.  
+- Run per-app commands via `pnpm -C <app> ...`  
+- Tailwind theme defined in `apps/web/tailwind.config.cjs`  
+- Custom PostGIS queries used instead of ORM for speed  
+- All seeds are **idempotent** — safe to re-run after resets  
 
 ---
 
-## 🌟 Screenshots (optional placeholders)
-
-> _(You can add your own screenshots later!)_
+## 📸 Preview
 
 <p align="center">
-  <img src="https://placehold.co/600x300?text=Map+View+Preview" width="600" />
+  <img src="https://placehold.co/800x400?text=Erasmus+Atlas+Map" width="700" />
   <br/>
-  <img src="https://placehold.co/600x300?text=Post+Form+Preview" width="600" />
+  <img src="https://placehold.co/800x400?text=Erasmus+Analytics+Dashboard" width="700" />
 </p>
 
 ---
 
 ## 🧾 License
-
-MIT © 2025 — Created by **[Your Name]**  
-Built for the **Erasmus+ Project**.
+MIT © 2025 — Built with ❤️ for the **Erasmus+ Project**
 
 ---
 
-## ❤️ Acknowledgments
+## 🙌 Acknowledgments
 - [Erasmus+ Programme (EU)](https://erasmus-plus.ec.europa.eu/)  
-- [MapLibre GL](https://maplibre.org/) for open-source maps  
-- [Tailwind CSS](https://tailwindcss.com/) for modern design  
-- [Fastify](https://fastify.dev/) for the fastest Node.js web framework  
+- [MapLibre GL](https://maplibre.org/)  
+- [Tailwind CSS](https://tailwindcss.com/)  
+- [Fastify](https://fastify.dev/)  
+- [PostGIS](https://postgis.net/)  
