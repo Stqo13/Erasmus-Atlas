@@ -10,7 +10,13 @@ import analyticsRoutes from './routes/analytics'
 async function main() {
   const app = Fastify({ logger: true });
 
-  await app.register(cors, { origin: ['http://localhost:5173'] });
+  await app.register(cors, 
+    { origin: ['http://localhost:5173'], 
+      methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+      allowedHeaders: ['Content-Type','Authorization'],
+      credentials: true
+    });
+    
   await app.register(authRoutes);
   await app.register(postsRoutes);
   await app.register(health);

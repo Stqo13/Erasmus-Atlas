@@ -16,7 +16,7 @@ async function submit() {
   const ok = await auth.register(name.value, email.value, password.value)
   if (ok) {
     note.value = 'Account created! Redirecting…'
-    router.push('/map')
+    router.push('/home')
   } else {
     err.value = auth.error || 'Registration failed'
   }

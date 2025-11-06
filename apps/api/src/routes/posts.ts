@@ -3,6 +3,12 @@
   import { q } from '../db';
   import { verify } from '../auth';
 
+  function getUserId(req: any) {
+    const auth = req.headers.authorization
+    if (!auth?.startsWith('Bearer ')) throw new Error('401')
+    try { return (verify(auth.slice(7)) as any).sub as string } catch { throw new Error('401') }
+  }
+
   export default async function postsRoutes(app: FastifyInstance) {
 
     app.get('/posts', async (req) => {
@@ -71,102 +77,187 @@
         cityId: z.string().uuid().optional(),
         cityName: z.string().optional(),
         countryIso2: z.string().length(2).optional(),
-        topics: z.array(z.string()).optional(),
-        topic: z.string().optional(),
+        topics: z.array(z.string()).default([]),
+        topic: z.string().optional(), // legacy single-topic support
       });
 
-      let b: z.infer<typeof schema>;
-      try {
-        b = schema.parse(req.body);
-      } catch (err: any) {
-        return rep.code(400).send({ error: err?.issues?.[0]?.message || 'Invalid body' });
-      }
+    // 1) validate
+    let b: z.infer<typeof schema>;
+    try {
+      b = schema.parse(req.body);
+    } catch (err: any) {
+      return rep.code(400).send({ error: err?.issues?.[0]?.message || 'Invalid body' });
+    }
 
-      const auth = req.headers.authorization;
-      if (!auth?.startsWith('Bearer ')) {
-        return rep.code(401).send({ error: 'Missing token' });
-      }
-      let userId: string;
-      try {
-        const payload = verify(auth.slice(7)) as any;
-        userId = payload.sub as string;
-      } catch {
-        return rep.code(401).send({ error: 'Invalid token' });
-      }
+    // 2) auth
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return rep.code(401).send({ error: 'Missing token' });
+    let userId: string;
+    try {
+      const payload = verify(auth.slice(7)) as any; // your verify util
+      userId = payload.sub as string;
+    } catch {
+      return rep.code(401).send({ error: 'Invalid token' });
+    }
 
-      let geomSql: string | null = null;
-      let geomParams: any[] = [];
-      let cityId: string | null = b.cityId ?? null;
+    // 3) resolve city id if provided as name+country
+    let cityId: string | null = b.cityId ?? null;
+    if (!cityId && b.cityName && b.countryIso2) {
+      const cityRows = await q<{ id: string }>(
+        `SELECT id FROM cities WHERE LOWER(name)=LOWER($1) AND country_iso2=$2 LIMIT 1`,
+        [b.cityName, b.countryIso2.toUpperCase()]
+      );
+    if (!cityRows.length) return rep.code(400).send({ error: 'City not found for that country' });
+    cityId = cityRows[0].id;
+    }
 
+    // 4) normalize topics (support legacy 'topic')
+    const topicsArray: string[] = Array.isArray(b.topics) && b.topics.length
+      ? b.topics
+      : b.topic ? [b.topic] : [];
+
+    try {
+      // Build dynamic INSERT safely
+      const cols: string[] = ['user_id', 'title', 'body', 'topics', 'status', 'created_at'];
+      const vals: string[] = ['$1', '$2', '$3', '$4::text[]', `'PUBLISHED'`, 'now()'];
+      const params: any[] = [userId, b.title, b.body, topicsArray];
+
+     // Optional geom (prefer explicit lat/lng if provided)
       if (typeof b.lat === 'number' && typeof b.lng === 'number') {
-        geomSql = 'ST_SetSRID(ST_MakePoint($geomLng,$geomLat),4326)';
-        geomParams = [b.lng, b.lat];
-      }
-      else if (cityId) {
-        const cityRows = await q<{ id: string; centroid: any }>(
-          'SELECT id, centroid FROM cities WHERE id = $1',
-          [cityId]
-        );
-        if (!cityRows.length) {
-          return rep.code(400).send({ error: 'City not found' });
-        }
-        geomSql = '($cityCentroid)::geometry';
-        geomParams = [cityRows[0].centroid];
-      }
-      else if (b.cityName && b.countryIso2) {
-        const cityRows = await q<{ id: string; centroid: any }>(
-          'SELECT id, centroid FROM cities WHERE LOWER(name) = LOWER($1) AND country_iso2 = $2 LIMIT 1',
-          [b.cityName, b.countryIso2.toUpperCase()]
-        );
-        if (!cityRows.length) {
-          return rep.code(400).send({ error: 'City not found for that country' });
-        }
-        cityId = cityRows[0].id;
-        geomSql = '($cityCentroid)::geometry';
-        geomParams = [cityRows[0].centroid];
+        cols.push('geom');
+        vals.push(`ST_SetSRID(ST_MakePoint($${params.length + 1}::double precision, $${params.length + 2}::double precision),4326)`);
+        params.push(b.lng, b.lat); // note: lng, lat order
+      } else if (cityId) {
+        // use city centroid as geom
+        cols.push('geom');
+        vals.push(`(SELECT centroid FROM cities WHERE id = $${params.length + 1})`);
+        params.push(cityId);
       }
 
-      const topicsArray: string[] = Array.isArray(b.topics)
-        ? b.topics
-        : b.topic
-          ? [b.topic]
-          : [];
-
-      try {
-        let rows;
-        if (geomSql) {
-          rows = await q(
-            `
-            INSERT INTO posts (user_id, title, body, geom, city_id, topics, status, created_at)
-            VALUES (
-              $1, $2, $3,
-              ${geomSql.replace('$geomLng', '$4').replace('$geomLat', '$5').replace('$cityCentroid', '$4')},
-              $6,
-              $7,
-              'PUBLISHED',
-              now()
-            )
-            RETURNING id
-            `,
-            geomParams.length === 2
-              ? [userId, b.title, b.body, geomParams[0], geomParams[1], cityId, topicsArray]
-              : [userId, b.title, b.body, geomParams[0], cityId, topicsArray]
-          );
-        } else {
-          rows = await q(
-            `
-            INSERT INTO posts (user_id, title, body, geom, city_id, topics, status, created_at)
-            VALUES ($1, $2, $3, NULL, $4, $5, 'PUBLISHED', now())
-            RETURNING id
-            `,
-            [userId, b.title, b.body, cityId, topicsArray]
-          );
-        }
-
-        return { id: rows[0].id };
-      } catch (err: any) {
-        req.log.error({ err }, 'post_create_failed');
-        return rep.code(500).send({ error: err?.message || 'Failed to create post' });
+      // Optional city_id
+      if (cityId) {
+        cols.push('city_id');
+        vals.push(`$${params.length + 1}::uuid`);
+        params.push(cityId);
       }
+
+      const sql = `
+        INSERT INTO posts (${cols.join(', ')})
+        VALUES (${vals.join(', ')})
+        RETURNING id
+      `;
+
+      const rows = await q<{ id: string }>(sql, params);
+      return rep.send({ id: rows[0].id });
+    } catch (err: any) {
+      req.log.error({ err }, 'post_create_failed');
+      return rep.code(500).send({ error: err?.message || 'Failed to create post' });
+    }
     });
-  }
+
+    app.get('/me/posts', async (req, rep) => {
+    let userId: string
+    try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
+
+    const qp = z.object({
+      page: z.coerce.number().min(1).default(1),
+      limit: z.coerce.number().min(1).max(100).default(20),
+    }).parse(req.query)
+
+    const offset = (qp.page - 1) * qp.limit
+    const items = await q<any>(`
+      SELECT p.id, p.title, p.body, p.topics, p.status, p.created_at, p.city_id,
+             COALESCE(ST_Y(p.geom), NULL)::double precision AS lat,
+             COALESCE(ST_X(p.geom), NULL)::double precision AS lng,
+             c.name AS city_name, c.country_iso2
+      FROM posts p
+      LEFT JOIN cities c ON c.id = p.city_id
+      WHERE p.user_id = $1
+      ORDER BY p.created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [userId, qp.limit, offset])
+
+    const [{ count }] = await q<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM posts WHERE user_id = $1`, [userId]
+    )
+
+    return { items, page: qp.page, limit: qp.limit, total: Number(count) }
+    });
+
+    app.get('/me/posts/:id', async (req, rep) => {
+    let userId: string
+    try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
+    const id = (req.params as any).id as string
+
+    const rows = await q<any>(`
+      SELECT p.id, p.title, p.body, p.topics, p.status, p.created_at, p.city_id,
+             COALESCE(ST_Y(p.geom), NULL)::double precision AS lat,
+             COALESCE(ST_X(p.geom), NULL)::double precision AS lng
+      FROM posts p
+      WHERE p.id = $1 AND p.user_id = $2
+      LIMIT 1
+    `, [id, userId])
+
+    if (!rows.length) return rep.code(404).send({ error: 'Post not found' })
+    return rows[0]
+    });
+
+    app.put('/posts/:id', async (req, rep) => {
+    let userId: string
+    try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
+    const id = (req.params as any).id as string
+
+    const bodySchema = z.object({
+      title: z.string().min(1),
+      body: z.string().min(1),
+      topics: z.array(z.string()).default([]),
+      cityId: z.string().uuid().nullable().optional(),
+      lat: z.number().optional(),
+      lng: z.number().optional(),
+      status: z.enum(['PUBLISHED','DRAFT']).optional(),
+    })
+    const b = bodySchema.parse(req.body)
+
+    // ownership check
+    const own = await q<{ id: string }>(
+      `SELECT id FROM posts WHERE id = $1 AND user_id = $2`, [id, userId]
+    )
+    if (!own.length) return rep.code(404).send({ error: 'Post not found' })
+
+    // dynamic update
+    const sets: string[] = []
+    const params: any[] = []
+    let p = 1
+    const add = (col: string, val: any) => { sets.push(`${col} = $${p++}`); params.push(val) }
+
+    add('title', b.title)
+    add('body', b.body)
+    add('topics', b.topics) // text[]
+    if (b.status) add('status', b.status)
+    if (typeof b.cityId !== 'undefined') add('city_id', b.cityId)
+
+    if (typeof b.lat === 'number' && typeof b.lng === 'number') {
+      sets.push(`geom = ST_SetSRID(ST_MakePoint($${p}::double precision, $${p+1}::double precision),4326)`)
+      params.push(b.lng, b.lat); p += 2
+    }
+
+    const sql = `UPDATE posts SET ${sets.join(', ')}, updated_at = now() WHERE id = $${p} AND user_id = $${p+1} RETURNING id`
+    params.push(id, userId)
+
+    const rows = await q<{ id: string }>(sql, params)
+    if (!rows.length) return rep.code(400).send({ error: 'Nothing updated' })
+    return { id: rows[0].id }
+    });
+    
+    app.delete('/posts/:id', async (req, rep) => {
+    let userId: string
+    try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
+    const id = (req.params as any).id as string
+
+    const rows = await q<{ id: string }>(
+      `DELETE FROM posts WHERE id = $1 AND user_id = $2 RETURNING id`, [id, userId]
+    )
+    if (!rows.length) return rep.code(404).send({ error: 'Post not found' })
+    return { ok: true }
+    });
+}

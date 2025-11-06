@@ -7,6 +7,8 @@ import RegisterView from './views/RegisterView.vue'
 import SubmitView from './views/SubmitView.vue'
 import MapView from './views/MapView.vue'
 import DashboardView from './views/DashboardView.vue'
+import MyPostsView from './views/MyPostsView.vue'
+import EditPostView from './views/EditPostView.vue'
 import { useAuth } from './stores/auth'
 
 export const router = createRouter({
@@ -20,6 +22,8 @@ export const router = createRouter({
     { path: '/submit', component: SubmitView, meta: { requiresAuth: true } },
     { path: '/dashboard', component: DashboardView },
     { path: '/:pathMatch(.*)*', component: HomeView },
+    { path: '/me/posts', component: MyPostsView },
+    { path: '/posts/:id/edit', component: EditPostView }
   ],
   scrollBehavior() {
     return { top: 0 }

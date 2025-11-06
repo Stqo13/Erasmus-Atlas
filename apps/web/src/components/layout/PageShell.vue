@@ -130,7 +130,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
                    class="absolute right-0 top-full mt-2 w-52 bg-white border border-ink/10 rounded-xl2 shadow-card p-1"
                    @click.outside="closeMenu">
                 <RouterLink to="/submit" class="block px-3 py-2 rounded-lg text-sm hover:bg-surface-100">Create post</RouterLink>
-                <RouterLink to="/posts" class="block px-3 py-2 rounded-lg text-sm hover:bg-surface-100">My posts</RouterLink>
+                <RouterLink to="/me/posts" class="block px-3 py-2 rounded-lg text-sm hover:bg-surface-100">My posts</RouterLink>
                 <button class="w-full text-left px-3 py-2 rounded-lg text-sm text-danger hover:bg-surface-100"
                         @click="onLogout">
                   Log out
