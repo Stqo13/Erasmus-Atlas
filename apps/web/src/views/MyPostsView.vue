@@ -32,7 +32,7 @@ function editPost(id: string) {
 async function deletePost(id: string) {
   if (!confirm('Delete this post?')) return
   try {
-    await api.delete(`/posts/${id}`)
+    await api.post(`/posts/${id}/delete`)
     toast.success('Deleted')
     load()
   } catch (e: any) {

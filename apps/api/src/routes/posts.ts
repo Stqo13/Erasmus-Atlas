@@ -202,54 +202,58 @@
     return rows[0]
     });
 
-    app.put('/posts/:id', async (req, rep) => {
-    let userId: string
-    try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
-    const id = (req.params as any).id as string
+    app.post('/posts/:id/edit', async (req, rep) => {
+      let userId: string
+      try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
+      const id = (req.params as any).id as string
 
-    const bodySchema = z.object({
-      title: z.string().min(1),
-      body: z.string().min(1),
-      topics: z.array(z.string()).default([]),
-      cityId: z.string().uuid().nullable().optional(),
-      lat: z.number().optional(),
-      lng: z.number().optional(),
-      status: z.enum(['PUBLISHED','DRAFT']).optional(),
-    })
+      const bodySchema = z.object({
+        title: z.string().min(1),
+        body: z.string().min(1),
+        topics: z.array(z.string()).default([]),
+        cityId: z.string().uuid().nullable().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        status: z.enum(['PUBLISHED','DRAFT']).optional(),
+      })
     const b = bodySchema.parse(req.body)
 
-    // ownership check
-    const own = await q<{ id: string }>(
-      `SELECT id FROM posts WHERE id = $1 AND user_id = $2`, [id, userId]
-    )
-    if (!own.length) return rep.code(404).send({ error: 'Post not found' })
+      const own = await q<{ id: string }>(
+        `SELECT id FROM posts WHERE id = $1 AND user_id = $2`, [id, userId]
+      )
+      if (!own.length) return rep.code(404).send({ error: 'Post not found' })
 
-    // dynamic update
-    const sets: string[] = []
-    const params: any[] = []
-    let p = 1
-    const add = (col: string, val: any) => { sets.push(`${col} = $${p++}`); params.push(val) }
+      const sets: string[] = []
+      const params: any[] = []
+      let p = 1
+      const add = (col: string, val: any, cast?: string) => {
+        if (val === undefined) return
+        if (val === null && cast) { sets.push(`${col} = NULL`); return }
+        if (cast) sets.push(`${col} = $${p}::${cast}`); else sets.push(`${col} = $${p}`)
+        params.push(val); p++
+      }
 
-    add('title', b.title)
-    add('body', b.body)
-    add('topics', b.topics) // text[]
-    if (b.status) add('status', b.status)
-    if (typeof b.cityId !== 'undefined') add('city_id', b.cityId)
+      add('title', b.title)
+      add('body', b.body)
+      add('topics', b.topics, 'text[]')
+      if (b.status) add('status', b.status)
+      if (b.cityId === null) sets.push('city_id = NULL')
+      else if (typeof b.cityId === 'string') add('city_id', b.cityId, 'uuid')
 
-    if (typeof b.lat === 'number' && typeof b.lng === 'number') {
-      sets.push(`geom = ST_SetSRID(ST_MakePoint($${p}::double precision, $${p+1}::double precision),4326)`)
-      params.push(b.lng, b.lat); p += 2
-    }
+      if (typeof b.lat === 'number' && typeof b.lng === 'number') {
+       sets.push(`geom = ST_SetSRID(ST_MakePoint($${p}::double precision, $${p+1}::double precision),4326)`)
+       params.push(b.lng, b.lat); p += 2
+      }
 
-    const sql = `UPDATE posts SET ${sets.join(', ')}, updated_at = now() WHERE id = $${p} AND user_id = $${p+1} RETURNING id`
-    params.push(id, userId)
+      const sql = `UPDATE posts SET ${sets.join(', ')} WHERE id = $${p} AND user_id = $${p+1} RETURNING id`
+      params.push(id, userId)
 
-    const rows = await q<{ id: string }>(sql, params)
-    if (!rows.length) return rep.code(400).send({ error: 'Nothing updated' })
-    return { id: rows[0].id }
+      const rows = await q<{ id: string }>(sql, params)
+      if (!rows.length) return rep.code(400).send({ error: 'Nothing updated' })
+      return { id: rows[0].id }
     });
     
-    app.delete('/posts/:id', async (req, rep) => {
+    app.post('/posts/:id/delete', async (req, rep) => {
     let userId: string
     try { userId = getUserId(req) } catch { return rep.code(401).send({ error: 'Unauthorized' }) }
     const id = (req.params as any).id as string

@@ -42,7 +42,7 @@ async function load() {
 
 async function save() {
   try {
-    await api.put(`/posts/${id}`, {
+      await api.post(`/posts/${id}/edit`, {
       title: title.value,
       body: body.value,
       topics: topics.value,
